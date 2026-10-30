@@ -17,7 +17,7 @@ jobs:
           username: ${{secrets.SSH_USERNAME}}
           key: ${{secrets.SSH_PRIVATE_KEY}}
           source: "deploy/nginx.conf"
-          target: "~/"
+          target: "/home/ubuntu/"
       
       - name: Setup Conf On Server
         uses: appleboy/ssh-action@v1.0.3
