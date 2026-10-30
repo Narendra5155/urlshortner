@@ -1,0 +1,66 @@
+name: ec2-nginx-setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-ec2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Copy Nginx Conf
+        uses: appleboy/scp-action@4
+        with:
+          host: ${{secrets.SSH_HOST}}
+          username: ${{secrets.SSH_USERNAME}}
+          key: ${{secrets.SSH_PRIVATE_KEY}}
+          source: "deploy/nginx.conf"
+          target: "~/"
+      
+      - name: Setup Conf On Server
+        uses: appleboy/ssh-action@v1.0.3
+        with: 
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            CONFIG="shorturl-api"
+            SOURCE="~/nginx.conf"
+            AVAILABLE="/etc/nginx/sites-available/$CONFIG"
+            ENABLED="/etc/nginx/sites-enabled/$CONFIG"
+
+            echo "Installing Nginx configuration..."
+
+            sudo cp "$SOURCE" "$AVAILABLE"
+            sudo ln -sfn "$AVAILABLE" "$ENABLED"
+
+            echo "Testing Nginx configuration..."
+
+            sudo nginx -t
+
+            echo "Reloading Nginx..."
+
+            sudo systemctl reload nginx
+
+            rm -f "$SOURCE"
+
+            echo "Requesting SSL certificate..."
+
+            sudo certbot --nginx \
+              -d "${{ vars.DOMAIN }}" \
+              --non-interactive \
+              --agree-tos \
+              -m "${{ vars.SSL_EMAIL }}" \
+              --redirect
+
+            echo "Final Nginx validation..."
+
+            sudo nginx -t
+            
+            sudo systemctl reload nginx
+
+            echo "Nginx deployment completed successfully!"
