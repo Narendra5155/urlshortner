@@ -62,6 +62,17 @@ jobs:
           script: |
             set -e
             echo "Deploying to EC2..."
+            export BASE_URL=${{vars.BASE_URL}}
+            export CORS_ORIGINS=${{vars.CORS_ORIGINS}}
+            export CACHE_TTL_SECONDS=${{vars.CACHE_TTL_SECONDS}}
+            export RATE_LIMIT_PER_MINUTE=${{vars.RATE_LIMIT_PER_MINUTE}}
+            export POSTGRES_HOST=${{vars.POSTGRES_HOST}}
+            export POSTGRES_PORT=${{vars.POSTGRES_PORT}}
+            export POSTGRES_USER=${{vars.POSTGRES_USER}}
+            export POSTGRES_DB=${{vars.POSTGRES_DB}}
+            export POSTGRES_PASSWORD=${{vars.POSTGRES_PASSWORD}}
+            export REDIS_HOST=${{vars.REDIS_HOST}}
+            export REDIS_PORT=${{vars.REDIS_PORT}}
 
             docker login -u ${{vars.DOCKERHUB_USERNAME}} -p ${{secrets.DOCKERHUB_TOKEN}}
             docker pull ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
