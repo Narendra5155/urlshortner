@@ -43,11 +43,11 @@ jobs:
           username: ${{vars.DOCKERHUB_USERNAME}}
           password: ${{secrets.DOCKERHUB_TOKEN}}
       - name: Build and Push
-        uses: docker/build-push-action@v6
+        uses: docker/bake-action@v7
         with:
-          context: .
           push: true
-          tags: ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
+          set: |
+            *.tags: ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
   
   deploy:
     runs-on: ubuntu-latest
