@@ -29,7 +29,7 @@ jobs:
             set -e
 
             CONFIG="shorturl-api"
-            SOURCE="home/ubuntu/nginx.conf"
+            SOURCE="home/ubuntu/deploy/nginx.conf"
             AVAILABLE="/etc/nginx/sites-available/$CONFIG"
             ENABLED="/etc/nginx/sites-enabled/$CONFIG"
 
