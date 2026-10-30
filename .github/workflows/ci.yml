@@ -1,10 +1,10 @@
 name : CI
 
 on: 
-  # push:
-  #   branches: ["main"]
-  # pull_request: 
-  #   branches: ["main"]
+  push:
+    branches: ["main"]
+  pull_request: 
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -55,24 +55,27 @@ jobs:
     steps:
       - name: SSH Setup
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          BASE_URL: ${{vars.BASE_URL}}
+          CORS_ORIGINS: ${{vars.CORS_ORIGINS}}
+          CACHE_TTL_SECONDS: ${{vars.CACHE_TTL_SECONDS}}
+          RATE_LIMIT_PER_MINUTE: ${{vars.RATE_LIMIT_PER_MINUTE}}
+          POSTGRES_HOST: ${{vars.POSTGRES_HOST}}
+          POSTGRES_PORT: ${{vars.POSTGRES_PORT}}
+          POSTGRES_USER: ${{vars.POSTGRES_USER}}
+          POSTGRES_DB: ${{vars.POSTGRES_DB}}
+          POSTGRES_PASSWORD: ${{vars.POSTGRES_PASSWORD}}
+          REDIS_HOST: ${{vars.REDIS_HOST}}
+          REDIS_PORT: ${{vars.REDIS_PORT}}
+  
         with:
           host: ${{secrets.SSH_HOST}}
           username: ${{secrets.SSH_USERNAME}}
           key: ${{secrets.SSH_PRIVATE_KEY}}
+          envs: BASE_URL, CORS_ORIGINS, CACHE_TTL_SECONDS, RATE_LIMIT_PER_MINUTE, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD, REDIS_HOST, REDIS_PORT
           script: |
             set -e
             echo "Deploying to EC2..."
-            export BASE_URL=${{vars.BASE_URL}}
-            export CORS_ORIGINS=${{vars.CORS_ORIGINS}}
-            export CACHE_TTL_SECONDS=${{vars.CACHE_TTL_SECONDS}}
-            export RATE_LIMIT_PER_MINUTE=${{vars.RATE_LIMIT_PER_MINUTE}}
-            export POSTGRES_HOST=${{vars.POSTGRES_HOST}}
-            export POSTGRES_PORT=${{vars.POSTGRES_PORT}}
-            export POSTGRES_USER=${{vars.POSTGRES_USER}}
-            export POSTGRES_DB=${{vars.POSTGRES_DB}}
-            export POSTGRES_PASSWORD=${{vars.POSTGRES_PASSWORD}}
-            export REDIS_HOST=${{vars.REDIS_HOST}}
-            export REDIS_PORT=${{vars.REDIS_PORT}}
 
             docker login -u ${{vars.DOCKERHUB_USERNAME}} -p ${{secrets.DOCKERHUB_TOKEN}}
             docker pull ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
