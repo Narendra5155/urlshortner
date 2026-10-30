@@ -81,7 +81,7 @@ jobs:
             docker pull ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
             docker stop shorturl || true
             docker rm shorturl || true
-            docker run -d --name shorturl -p 8000:8000 ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
+            docker run -e ${BASE_URL} -e ${CORS_ORIGINS} -e ${CACHE_TTL_SECONDS} -e ${RATE_LIMIT_PER_MINUTE} -e ${POSTGRES_HOST} -e ${POSTGRES_PORT} -e ${POSTGRES_USER} -e ${POSTGRES_DB} -e ${POSTGRES_PASSWORD} -e ${REDIS_HOST} -e ${REDIS_PORT} -d --name shorturl -p :8000:8000 ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
 
             echo "Deployment completed successfully!"
 
