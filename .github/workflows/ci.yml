@@ -129,8 +129,7 @@ jobs:
           sleep 10
           #wait for health check
           for i in {1..30}; do
-           curl -s http://localhost:8000/api/health | grep -q "OK" && break
-           sleep 1
+           curl -s http://localhost:8000/api/health | grep -q "ok" && echo "Health check passed" && break || echo "Health check failed" && sleep 1
           done
           REMOTE
 
