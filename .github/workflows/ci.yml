@@ -129,14 +129,9 @@ jobs:
            docker compose up -d
 
            #wait for health check
-           while ! curl -s http://localhost:8000/health | grep -q "OK"; do
-             echo "Waiting for health check..."
-             sleep 1
+           for i in {1..30}; do
+           curl -s http://localhost:8000/api/health | grep -q "OK" && break
            done
-           echo "Health check passed"
-
-           #wait for 10 seconds
-           sleep 10
 
       
       
