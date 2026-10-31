@@ -92,19 +92,19 @@ jobs:
           REDIS_PORT: ${{vars.REDIS_PORT}} 
           APP_IMAGE: hindwar5155/shorturl:latest
         run: |
-          cat <<EOF > .env
-          BASE_URL: $BASE_URL
-          CORS_ORIGINS: $CORS_ORIGINS
-          CACHE_TTL_SECONDS: $CACHE_TTL_SECONDS
-          RATE_LIMIT_PER_MINUTE: $RATE_LIMIT_PER_MINUTE
-          POSTGRES_HOST: $POSTGRES_HOST
-          POSTGRES_PORT: $POSTGRES_PORT
-          POSTGRES_USER: $POSTGRES_USER
-          POSTGRES_DB: $POSTGRES_DB
-          POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-          REDIS_HOST: $REDIS_HOST
-          REDIS_PORT: $REDIS_PORT
-          APP_IMAGE: $APP_IMAGE
+          cat > .env << 'EOF'
+          BASE_URL=$BASE_URL
+          CORS_ORIGINS=$CORS_ORIGINS
+          CACHE_TTL_SECONDS=$CACHE_TTL_SECONDS
+          RATE_LIMIT_PER_MINUTE=$RATE_LIMIT_PER_MINUTE
+          POSTGRES_HOST=$POSTGRES_HOST
+          POSTGRES_PORT=$POSTGRES_PORT
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_DB=$POSTGRES_DB
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          REDIS_HOST=$REDIS_HOST
+          REDIS_PORT=$REDIS_PORT
+          APP_IMAGE=$APP_IMAGE
           EOF
 
       - name: Copy env file to EC2
@@ -127,9 +127,12 @@ jobs:
            docker compose down
            docker compose up -d
 
+           sleep 10
+
            #wait for health check
            for i in {1..30}; do
-           curl -s http://localhost:8000/api/health | grep -q "OK" && break
+            curl -s http://localhost:8000/api/health | grep -q "OK" && break
+            sleep 1
            done
            REMOTE
 
