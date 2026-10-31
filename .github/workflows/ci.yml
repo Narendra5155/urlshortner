@@ -118,7 +118,7 @@ jobs:
           DOCKERHUB_USERNAME: ${{vars.DOCKERHUB_USERNAME}}
           DOCKERHUB_TOKEN: ${{secrets.DOCKERHUB_TOKEN}}
         run: |
-          ssh $SSH_USERNAME@$SSH_HOST \
+           ssh $SSH_USERNAME@$SSH_HOST \
            "APP_DIR='$APP_DIR' DOCKERHUB_USERNAME='$DOCKERHUB_USERNAME' DOCKERHUB_TOKEN='$DOCKERHUB_TOKEN' bash -s" <<'REMOTE'
            cd "$APP_DIR" 
            chmod 600 .env
