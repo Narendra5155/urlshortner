@@ -42,50 +42,99 @@ jobs:
         with:
           username: ${{vars.DOCKERHUB_USERNAME}}
           password: ${{secrets.DOCKERHUB_TOKEN}}
-      - name: Build and Push
-        uses: docker/bake-action@v7
+      - name: Build & Push Image
+        uses: docker/build-push-action@v6
         with:
+          context: .
+          platform: linux/amd64,linux/arm64
           push: true
-          set: |
-            *.tags: ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
+          tags: |
+             ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
+             ${{vars.DOCKERHUB_USERNAME}}/shorturl:${{github.sha}}
   
   deploy:
     runs-on: ubuntu-latest
     needs: build
+    env:
+      SSH_HOST: ${{secrets.SSH_HOST}}
+      SSH_USERNAME: ${{secrets.SSH_USERNAME}}
+      APP_DIR: /home/ubuntu/deploy
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: SSH Setup
-        uses: appleboy/ssh-action@v1.0.3
         env:
-          BASE_URL: ${{vars.BASE_URL}}
-          CORS_ORIGINS: ${{vars.CORS_ORIGINS}}
-          CACHE_TTL_SECONDS: ${{vars.CACHE_TTL_SECONDS}}
-          RATE_LIMIT_PER_MINUTE: ${{vars.RATE_LIMIT_PER_MINUTE}}
-          POSTGRES_HOST: ${{vars.POSTGRES_HOST}}
-          POSTGRES_PORT: ${{vars.POSTGRES_PORT}}
-          POSTGRES_USER: ${{vars.POSTGRES_USER}}
-          POSTGRES_DB: ${{vars.POSTGRES_DB}}
-          POSTGRES_PASSWORD: ${{vars.POSTGRES_PASSWORD}}
-          REDIS_HOST: ${{vars.REDIS_HOST}}
-          REDIS_PORT: ${{vars.REDIS_PORT}}
-  
-        with:
-          host: ${{secrets.SSH_HOST}}
-          username: ${{secrets.SSH_USERNAME}}
-          key: ${{secrets.SSH_PRIVATE_KEY}}
-          envs: BASE_URL, CORS_ORIGINS, CACHE_TTL_SECONDS, RATE_LIMIT_PER_MINUTE, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_DB, POSTGRES_PASSWORD, REDIS_HOST, REDIS_PORT
-          script: |
-            set -e
-            echo "Deploying to EC2..."
+          SSH_PRIVATE_KEY: ${{secrets.SSH_PRIVATE_KEY}}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+          ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST <<EOF
+      
+      - name: Write env file from GihHub Secrets
+        
+        env:
+          BASE_URL: ${{vars.BASE_URL}} 
+          CORS_ORIGINS: ${{vars.CORS_ORIGINS}} 
+          CACHE_TTL_SECONDS: ${{vars.CACHE_TTL_SECONDS}} 
+          RATE_LIMIT_PER_MINUTE: ${{vars.RATE_LIMIT_PER_MINUTE}} 
+          POSTGRES_HOST: ${{vars.POSTGRES_HOST}} 
+          POSTGRES_PORT: ${{vars.POSTGRES_PORT}} 
+          POSTGRES_USER: ${{vars.POSTGRES_USER}} 
+          POSTGRES_DB: ${{vars.POSTGRES_DB}} 
+          POSTGRES_PASSWORD: ${{vars.POSTGRES_PASSWORD}} 
+          REDIS_HOST: ${{vars.REDIS_HOST}} 
+          REDIS_PORT: ${{vars.REDIS_PORT}} 
+          APP_IMAGE: hindwar5155/shorturl:latest
+        run: |
+          cat <<EOF > .env
+          BASE_URL: $BASE_URL
+          CORS_ORIGINS: $CORS_ORIGINS
+          CACHE_TTL_SECONDS: $CACHE_TTL_SECONDS
+          RATE_LIMIT_PER_MINUTE: $RATE_LIMIT_PER_MINUTE
+          POSTGRES_HOST: $POSTGRES_HOST
+          POSTGRES_PORT: $POSTGRES_PORT
+          POSTGRES_USER: $POSTGRES_USER
+          POSTGRES_DB: $POSTGRES_DB
+          POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+          REDIS_HOST: $REDIS_HOST
+          REDIS_PORT: $REDIS_PORT
+          APP_IMAGE: $APP_IMAGE
+          EOF
 
-            docker login -u ${{vars.DOCKERHUB_USERNAME}} -p ${{secrets.DOCKERHUB_TOKEN}}
-            docker pull ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
-            docker stop shorturl || true
-            docker rm shorturl || true
-            docker run -e ${BASE_URL} -e ${CORS_ORIGINS} -e ${CACHE_TTL_SECONDS} -e ${RATE_LIMIT_PER_MINUTE} -e ${POSTGRES_HOST} -e ${POSTGRES_PORT} -e ${POSTGRES_USER} -e ${POSTGRES_DB} -e ${POSTGRES_PASSWORD} -e ${REDIS_HOST} -e ${REDIS_PORT} -d --name shorturl -p :8000:8000 ${{vars.DOCKERHUB_USERNAME}}/shorturl:latest
+      - name: Copy env file to EC2
+        run: |
+          scp .env docker-compose.yml $SSH_USERNAME@$SSH_HOST:$APP_DIR/
+          rm .env
 
-            echo "Deployment completed successfully!"
+      - name: Deploy to EC2
+        env:
+          DOCKERHUB_USERNAME: ${{vars.DOCKERHUB_USERNAME}}
+          DOCKERHUB_TOKEN: ${{secrets.DOCKERHUB_TOKEN}}
+        run: |
+          ssh $SSH_USERNAME@$SSH_HOST \
+           APP_DIR=$APP_DIR \
+           DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME \
+           DOCKERHUB_TOKEN=$DOCKERHUB_TOKEN \
+           cd "$APP_DIR"
+           chmod 600 .env
+           echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+           docker compose pull
+           docker logout $DOCKERHUB_USERNAME
+           docker compose down
+           docker compose up -d
 
-    
+           #wait for health check
+           while ! curl -s http://localhost:8000/health | grep -q "OK"; do
+             echo "Waiting for health check..."
+             sleep 1
+           done
+           echo "Health check passed"
+
+           #wait for 10 seconds
+           sleep 10
 
       
       

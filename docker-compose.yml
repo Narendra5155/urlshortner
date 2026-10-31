@@ -36,6 +36,7 @@ services:
 
     
   backend:
+    image: ${APP_IMAGE}
     build: .
     restart: unless-stopped
     environment:
