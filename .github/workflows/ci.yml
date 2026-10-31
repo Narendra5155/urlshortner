@@ -75,7 +75,6 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
-          ssh -o StrictHostKeyChecking=no $SSH_USERNAME@$SSH_HOST <<EOF
       
       - name: Write env file from GihHub Secrets
         
