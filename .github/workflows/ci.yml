@@ -132,6 +132,7 @@ jobs:
            for i in {1..30}; do
            curl -s http://localhost:8000/api/health | grep -q "OK" && break
            done
+           REMOTE
 
       
       
